@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Control de Gastos</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #111a2e;
+      --muted: #8ea0c6;
+      --text: #e9eefc;
+      --line: rgba(255, 255, 255, .08);
+      --ok: #2bd576;
+      --bad: #ff5c6a;
+      --btn: #1f3b8a;
+      --btn2: #0f2a6a;
+      --chip: rgba(255, 255, 255, .06);
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: radial-gradient(1200px 800px at 20% 0%, #142a66 0%, var(--bg) 55%) fixed;
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 16px
+    }
+
+    header {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 2px
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: .2px
+    }
+
+    .brand small {
+      color: var(--muted)
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .03));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, .25);
+    }
+
+    .title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px
+    }
+
+    .title h2 {
+      margin: 0;
+      font-size: 15px
+    }
+
+    .pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--chip);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px
+    }
+
+    @media (max-width: 520px) {
+      .row {
+        grid-template-columns: 1fr
+      }
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    input,
+    select,
+    textarea {
+      background: rgba(0, 0, 0, .25);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 10px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 80px;
+      resize: vertical
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: linear-gradient(180deg, var(--btn), var(--btn2));
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button.secondary {
+      background: rgba(255, 255, 255, .06);
+      border: 1px solid var(--line);
+      font-weight: 700;
+    }
+
+    button:disabled {
+      opacity: .55;
+      cursor: not-allowed
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px
+    }
+
+    .kpi {
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(0, 0, 0, .18);
+      border: 1px solid var(--line);
+    }
+
+    .kpi .n {
+      font-size: 20px;
+      font-weight: 900;
+      margin-top: 6px
+    }
+
+    .kpi .t {
+      color: var(--muted);
+      font-size: 12px
+    }
+
+    .kpi .s {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 6px
+    }
+
+    .msg {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(0, 0, 0, .18);
+      color: var(--muted);
+    }
+
+    .msg.ok {
+      border-color: rgba(43, 213, 118, .35);
+      color: #bff4d5
+    }
+
+    .msg.err {
+      border-color: rgba(255, 92, 106, .35);
+      color: #ffd0d5
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 8px;
+      font-size: 13px;
+    }
+
+    td {
+      padding: 10px;
+      background: rgba(0, 0, 0, .18);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    td:first-child {
+      border-left: 1px solid var(--line);
+      border-radius: 12px 0 0 12px
+    }
+
+    td:last-child {
+      border-right: 1px solid var(--line);
+      border-radius: 0 12px 12px 0
+    }
+
+    .mini {
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .muted {
+      color: var(--muted)
+    }
+
+    .right {
+      text-align: right
+    }
+
+    a {
+      color: #bcd0ff
+    }
+
+    .split {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    .split>* {
+      flex: 1;
+      min-width: 170px
+    }
+
+    .panel {
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(0, 0, 0, .18);
+      border: 1px solid var(--line);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <h1>Control de Gastos (Google Drive + Sheets)</h1>
+        <small id="sub">Cargando…</small>
+      </div>
+      <div class="pill" id="statusPill">—</div>
+    </header>
+
+    <div class="grid">
+      <!-- FORM -->
+      <section class="card">
+        <div class="title">
+          <h2>Nuevo movimiento</h2>
+          <span class="pill" id="today"></span>
+        </div>
+
+        <div class="row">
+          <label>Fecha
+            <input id="fecha" type="date" />
+          </label>
+          <label>Tipo
+            <select id="tipo"></select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>Categoría
+            <select id="categoria"></select>
+          </label>
+          <label>Subcategoría
+            <select id="subcategoria"></select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>Monto
+            <input id="monto" type="number" step="0.01" placeholder="0.00" />
+          </label>
+          <label>Moneda
+            <select id="moneda"></select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>Medio de pago
+            <select id="medioPago"></select>
+          </label>
+          <label>Proveedor (opcional)
+            <select id="proveedorId"></select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>Banco (opcional)
+            <select id="bancoId"></select>
+          </label>
+          <label>Deudor (opcional)
+            <select id="deudorId"></select>
+          </label>
+        </div>
+
+        <label>Descripción
+          <textarea id="descripcion" placeholder="Detalle corto del gasto…"></textarea>
+        </label>
+
+        <label>Comprobante (URL Drive opcional)
+          <input id="comprobanteUrl" type="url" placeholder="https://drive.google.com/..." />
+        </label>
+
+        <div class="actions">
+          <button id="btnGuardar" onclick="guardar()">Guardar</button>
+          <button class="secondary" onclick="limpiar()">Limpiar</button>
+          <button class="secondary" onclick="abrirCatalogos()">Agregar Proveedor/Banco/Deudor</button>
+        </div>
+
+        <div id="msg" class="msg" style="display:none"></div>
+      </section>
+
+      <!-- DASHBOARD -->
+      <aside class="card">
+        <div class="title">
+          <h2>Dashboard mensual (gerencial)</h2>
+          <span class="pill" id="dashPill">—</span>
+        </div>
+
+        <div class="row">
+          <label>Mes
+            <input id="mesDash" type="month" />
+          </label>
+          <label>Moneda
+            <select id="monedaDash"></select>
+          </label>
+        </div>
+
+        <div class="kpis" style="margin-top:10px">
+          <div class="kpi">
+            <div class="t">Gastos del mes</div>
+            <div class="n" id="kpiGastos">—</div>
+            <div class="s" id="kpiGastosS">—</div>
+          </div>
+          <div class="kpi">
+            <div class="t">Ingresos del mes</div>
+            <div class="n" id="kpiIngresos">—</div>
+            <div class="s" id="kpiIngresosS">—</div>
+          </div>
+          <div class="kpi">
+            <div class="t">Balance (I - G)</div>
+            <div class="n" id="kpiBalance">—</div>
+            <div class="s" id="kpiBalanceS">—</div>
+          </div>
+          <div class="kpi">
+            <div class="t">Ticket promedio (gasto)</div>
+            <div class="n" id="kpiTicket">—</div>
+            <div class="s" id="kpiTicketS">—</div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:12px">
+          <div class="mini">Barras: Gastos por categoría</div>
+          <canvas id="barCat" height="140"></canvas>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div class="panel">
+            <div class="mini">Pastel: Distribución de gastos</div>
+            <canvas id="pieCat" height="180"></canvas>
+          </div>
+          <div class="panel">
+            <div class="mini">Línea: Gastos diarios</div>
+            <canvas id="lineDay" height="180"></canvas>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:10px">
+          <div class="mini">Top 10 proveedores (gasto)</div>
+          <canvas id="barProv" height="160"></canvas>
+        </div>
+
+        <div class="msg" style="margin-top:12px">
+          Así las cosas: registrá en el momento y el dashboard se actualiza solo.
+        </div>
+      </aside>
+    </div>
+
+    <!-- LISTADO -->
+    <section class="card" style="margin-top:12px">
+      <div class="title">
+        <h2>Movimientos (últimos 30)</h2>
+        <div class="split">
+          <select id="filtroTipo" onchange="renderTabla()"></select>
+          <select id="filtroMoneda" onchange="renderTabla()"></select>
+          <input id="busqueda" placeholder="Buscar (categoría, proveedor, descripción…)" oninput="renderTabla()" />
+        </div>
+      </div>
+
+      <table>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="mini">Mostrando máximo 30 registros (más recientes primero).</div>
+    </section>
+
+    <!-- MODAL CATÁLOGOS -->
+    <div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);padding:16px">
+      <div class="card" style="max-width:760px;margin:0 auto">
+        <div class="title">
+          <h2>Catálogos</h2>
+          <button class="secondary" onclick="cerrarCatalogos()">Cerrar</button>
+        </div>
+
+        <div class="row">
+          <div class="card" style="padding:12px">
+            <div class="title">
+              <h2 style="font-size:14px;margin:0">Nuevo proveedor</h2>
+            </div>
+            <label>Nombre <input id="provNombre" /></label>
+            <label>Tipo <input id="provTipo" placeholder="Servicio público / Comercio / Persona" /></label>
+            <div class="actions">
+              <button onclick="addProveedor()">Guardar proveedor</button>
+            </div>
+          </div>
+
+          <div class="card" style="padding:12px">
+            <div class="title">
+              <h2 style="font-size:14px;margin:0">Nuevo banco</h2>
+            </div>
+            <label>Nombre <input id="banNombre" /></label>
+            <label>Referencia (opcional) <input id="banRef" /></label>
+            <div class="actions">
+              <button onclick="addBanco()">Guardar banco</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="padding:12px;margin-top:10px">
+          <div class="title">
+            <h2 style="font-size:14px;margin:0">Nuevo deudor</h2>
+          </div>
+          <div class="row">
+            <label>Nombre <input id="deuNombre" /></label>
+            <label>Saldo inicial <input id="deuSaldo" type="number" step="0.01" value="0" /></label>
+          </div>
+          <div class="actions">
+            <button onclick="addDeudor()">Guardar deudor</button>
+          </div>
+          <div class="mini">Deudas: “Deuda” sube saldo; “PagoDeuda” baja saldo (por análisis posterior).</div>
+        </div>
+
+        <div id="modalMsg" class="msg" style="display:none"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let CATS = null;
+    let MOVS = [];
+
+    let CH_bar = null;
+    let CH_pie = null;
+    let CH_line = null;
+    let CH_prov = null;
+
+    const $ = (id) => document.getElementById(id);
+
+    function setMsg(text, type = "") {
+      const el = $("msg");
+      el.style.display = "block";
+      el.className = "msg " + (type || "");
+      el.textContent = text;
+    }
+    function setModalMsg(text, type = "") {
+      const el = $("modalMsg");
+      el.style.display = "block";
+      el.className = "msg " + (type || "");
+      el.textContent = text;
+    }
+
+    function money(n) {
+      const x = Number(n || 0);
+      return x.toLocaleString("es-CR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function todayYMD() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
+    function yyyymmNow() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      return `${y}-${m}`;
+    }
+
+    function fillSelect(el, items, placeholder = "(Seleccionar)") {
+      el.innerHTML = "";
+      const opt0 = document.createElement("option");
+      opt0.value = "";
+      opt0.textContent = placeholder;
+      el.appendChild(opt0);
+      items.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v.value ?? v;
+        opt.textContent = v.label ?? v;
+        el.appendChild(opt);
+      });
+    }
+
+    function rebuildSubcats() {
+      const cat = $("categoria").value;
+      const subs = (CATS.subcategoriasByCat[cat] || []).sort();
+      fillSelect($("subcategoria"), subs, "(Opcional)");
+    }
+
+    function applyCatalogs(c) {
+      CATS = c;
+
+      fillSelect($("tipo"), c.tipos, "(Seleccionar)");
+      fillSelect($("moneda"), c.monedas, "(Seleccionar)");
+      fillSelect($("medioPago"), c.mediosPago, "(Seleccionar)");
+
+      fillSelect($("categoria"), c.categorias, "(Seleccionar)");
+      rebuildSubcats();
+
+      fillSelect($("proveedorId"), c.proveedores.map(x => ({ value: x.id, label: `${x.nombre} (${x.id})` })), "(Opcional)");
+      fillSelect($("bancoId"), c.bancos.map(x => ({ value: x.id, label: `${x.nombre} (${x.id})` })), "(Opcional)");
+      fillSelect($("deudorId"), c.deudores.map(x => ({ value: x.id, label: `${x.nombre} (${x.id})` })), "(Opcional)");
+
+      fillSelect($("filtroTipo"), ["(Todos)"].concat(c.tipos).map(x => ({ value: x === "(Todos)" ? "" : x, label: x })), "(Todos)");
+      fillSelect($("filtroMoneda"), ["(Todas)"].concat(c.monedas).map(x => ({ value: x === "(Todas)" ? "" : x, label: x })), "(Todas)");
+
+      fillSelect($("monedaDash"), c.monedas, "(Seleccionar)");
+      $("monedaDash").value = "CRC";
+    }
+
+    function limpiar() {
+      $("fecha").value = todayYMD();
+      $("tipo").value = "";
+      $("categoria").value = "";
+      rebuildSubcats();
+      $("monto").value = "";
+      $("moneda").value = "CRC";
+      $("medioPago").value = "";
+      $("proveedorId").value = "";
+      $("bancoId").value = "";
+      $("deudorId").value = "";
+      $("descripcion").value = "";
+      $("comprobanteUrl").value = "";
+      $("msg").style.display = "none";
+    }
+
+    function guardar() {
+      $("btnGuardar").disabled = true;
+      $("statusPill").textContent = "Guardando…";
+
+      const payload = {
+        fecha: $("fecha").value,
+        tipo: $("tipo").value,
+        categoria: $("categoria").value,
+        subcategoria: $("subcategoria").value,
+        monto: $("monto").value,
+        moneda: $("moneda").value || "CRC",
+        medioPago: $("medioPago").value,
+        proveedorId: $("proveedorId").value,
+        bancoId: $("bancoId").value,
+        deudorId: $("deudorId").value,
+        descripcion: $("descripcion").value,
+        comprobanteUrl: $("comprobanteUrl").value
+      };
+
+      if (!payload.fecha || !payload.tipo || !payload.categoria || !payload.monto) {
+        setMsg("Faltan datos: Fecha, Tipo, Categoría y Monto son obligatorios.", "err");
+        $("btnGuardar").disabled = false;
+        $("statusPill").textContent = "Listo";
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res.ok) {
+            setMsg("Error guardando: " + (res.error || "desconocido"), "err");
+          } else {
+            setMsg("Guardado con ID: " + res.id, "ok");
+            MOVS = res.latest || MOVS;
+            renderTabla();
+            loadDashboardMonth();
+            limpiar();
+          }
+          $("btnGuardar").disabled = false;
+          $("statusPill").textContent = "Listo";
+        })
+        .withFailureHandler(err => {
+          setMsg("Error: " + err, "err");
+          $("btnGuardar").disabled = false;
+          $("statusPill").textContent = "Listo";
+        })
+        .api_addMovimiento(payload);
+    }
+
+    function abrirCatalogos() { $("modal").style.display = "block"; $("modalMsg").style.display = "none"; }
+    function cerrarCatalogos() { $("modal").style.display = "none"; }
+
+    function addProveedor() {
+      const nombre = $("provNombre").value.trim();
+      const tipo = $("provTipo").value.trim();
+      if (!nombre) { setModalMsg("Proveedor: el nombre es obligatorio.", "err"); return; }
+
+      google.script.run.withSuccessHandler(res => {
+        if (!res.ok) { setModalMsg("Error: " + (res.error || "desconocido"), "err"); return; }
+        applyCatalogs(res.catalogs);
+        setModalMsg("Proveedor guardado: " + res.id, "ok");
+        $("provNombre").value = ""; $("provTipo").value = "";
+      }).api_addProveedor({ nombre, tipo });
+    }
+
+    function addBanco() {
+      const nombre = $("banNombre").value.trim();
+      const referencia = $("banRef").value.trim();
+      if (!nombre) { setModalMsg("Banco: el nombre es obligatorio.", "err"); return; }
+
+      google.script.run.withSuccessHandler(res => {
+        if (!res.ok) { setModalMsg("Error: " + (res.error || "desconocido"), "err"); return; }
+        applyCatalogs(res.catalogs);
+        setModalMsg("Banco guardado: " + res.id, "ok");
+        $("banNombre").value = ""; $("banRef").value = "";
+      }).api_addBanco({ nombre, referencia });
+    }
+
+    function addDeudor() {
+      const nombre = $("deuNombre").value.trim();
+      const saldoInicial = $("deuSaldo").value;
+      if (!nombre) { setModalMsg("Deudor: el nombre es obligatorio.", "err"); return; }
+
+      google.script.run.withSuccessHandler(res => {
+        if (!res.ok) { setModalMsg("Error: " + (res.error || "desconocido"), "err"); return; }
+        applyCatalogs(res.catalogs);
+        setModalMsg("Deudor guardado: " + res.id, "ok");
+        $("deuNombre").value = ""; $("deuSaldo").value = "0";
+      }).api_addDeudor({ nombre, saldoInicial });
+    }
+
+    // ====== TABLA (últimos 30) ======
+    function renderTabla() {
+      const tBody = $("tbody");
+      tBody.innerHTML = "";
+
+      const ft = $("filtroTipo").value || "";
+      const fm = $("filtroMoneda").value || "";
+      const q = ($("busqueda").value || "").trim().toLowerCase();
+
+      const rows = MOVS.filter(r => {
+        if (ft && r.tipo !== ft) return false;
+        if (fm && (r.moneda || "CRC") !== fm) return false;
+
+        if (q) {
+          const blob = [
+            r.id, r.fecha, r.tipo, r.categoria, r.subcategoria,
+            r.proveedorNombre, r.bancoNombre, r.deudorNombre, r.descripcion
+          ].join(" ").toLowerCase();
+          if (!blob.includes(q)) return false;
+        }
+        return true;
+      });
+
+      rows.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="width:120px">
+            <div><strong>${r.id}</strong></div>
+            <div class="mini">${r.fecha}</div>
+          </td>
+          <td>
+            <div><strong>${r.tipo}</strong> · <span class="muted">${r.categoria}${r.subcategoria ? " / " + r.subcategoria : ""}</span></div>
+            <div class="mini">
+              ${r.proveedorNombre || ""} ${r.bancoNombre ? "· " + r.bancoNombre : ""} ${r.deudorNombre ? "· " + r.deudorNombre : ""}
+            </div>
+            <div class="mini">${r.descripcion || ""}</div>
+          </td>
+          <td class="right" style="width:160px">
+            <div><strong>${money(r.monto)} ${r.moneda || "CRC"}</strong></div>
+            ${r.comprobanteUrl ? `<div class="mini"><a href="${r.comprobanteUrl}" target="_blank">Comprobante</a></div>` : `<div class="mini muted">—</div>`}
+          </td>
+        `;
+        tBody.appendChild(tr);
+      });
+    }
+
+    // ====== DASHBOARD ======
+    function groupSumBy(rows, key) {
+      const m = {};
+      rows.forEach(r => {
+        const k = r[key] || "(Sin dato)";
+        m[k] = (m[k] || 0) + Number(r.monto || 0);
+      });
+      return m;
+    }
+
+    function topN(mapObj, n) {
+      const arr = Object.keys(mapObj).map(k => ({ k, v: mapObj[k] }));
+      arr.sort((a, b) => b.v - a.v);
+      return arr.slice(0, n);
+    }
+
+    function destroyCharts() {
+      if (CH_bar) CH_bar.destroy();
+      if (CH_pie) CH_pie.destroy();
+      if (CH_line) CH_line.destroy();
+      if (CH_prov) CH_prov.destroy();
+    }
+
+    function renderCharts(rowsMes, moneda) {
+      const gastos = rowsMes.filter(r => r.tipo !== "Ingreso" && (r.moneda || "CRC") === moneda);
+      const ingresos = rowsMes.filter(r => r.tipo === "Ingreso" && (r.moneda || "CRC") === moneda);
+
+      const totalG = gastos.reduce((a, r) => a + Number(r.monto || 0), 0);
+      const totalI = ingresos.reduce((a, r) => a + Number(r.monto || 0), 0);
+      const balance = totalI - totalG;
+      const ticket = gastos.length ? (totalG / gastos.length) : 0;
+
+      $("kpiGastos").textContent = money(totalG);
+      $("kpiIngresos").textContent = money(totalI);
+      $("kpiBalance").textContent = money(balance);
+      $("kpiTicket").textContent = money(ticket);
+
+      $("kpiGastosS").textContent = `Registros: ${gastos.length} · ${moneda}`;
+      $("kpiIngresosS").textContent = `Registros: ${ingresos.length} · ${moneda}`;
+      $("kpiBalanceS").textContent = balance >= 0 ? `Positivo · ${moneda}` : `Negativo · ${moneda}`;
+      $("kpiTicketS").textContent = `Promedio por gasto · ${moneda}`;
+
+      const byCat = groupSumBy(gastos, "categoria");
+      const catSorted = topN(byCat, 12); // top 12 categorías
+      const labelsCat = catSorted.map(x => x.k);
+      const valuesCat = catSorted.map(x => x.v);
+
+      const byDay = {};
+      gastos.forEach(r => {
+        const key = r.fechaYMD || "";
+        if (!key) return;
+        byDay[key] = (byDay[key] || 0) + Number(r.monto || 0);
+      });
+      const dayLabels = Object.keys(byDay).sort();
+      const dayValues = dayLabels.map(k => byDay[k]);
+
+      const byProv = groupSumBy(gastos, "proveedorNombre");
+      const provSorted = topN(byProv, 10);
+      const labelsProv = provSorted.map(x => x.k || "(Sin proveedor)");
+      const valuesProv = provSorted.map(x => x.v);
+
+      destroyCharts();
+
+      CH_bar = new Chart($("barCat"), {
+        type: "bar",
+        data: { labels: labelsCat, datasets: [{ label: `Gastos (${moneda})`, data: valuesCat }] },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+      });
+
+      CH_pie = new Chart($("pieCat"), {
+        type: "pie",
+        data: { labels: labelsCat, datasets: [{ data: valuesCat }] },
+        options: { responsive: true }
+      });
+
+      CH_line = new Chart($("lineDay"), {
+        type: "line",
+        data: { labels: dayLabels, datasets: [{ label: `Gastos diarios (${moneda})`, data: dayValues }] },
+        options: { responsive: true }
+      });
+
+      CH_prov = new Chart($("barProv"), {
+        type: "bar",
+        data: { labels: labelsProv, datasets: [{ label: `Top proveedores (${moneda})`, data: valuesProv }] },
+        options: { responsive: true, indexAxis: "y", plugins: { legend: { display: false } } }
+      });
+    }
+
+    function loadDashboardMonth() {
+      const ym = $("mesDash").value;
+      if (!ym) return;
+
+      const [year, month] = ym.split("-").map(Number);
+      const moneda = $("monedaDash").value || "CRC";
+
+      $("dashPill").textContent = `Cargando ${ym}…`;
+      $("statusPill").textContent = "Actualizando dashboard…";
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res.ok) {
+            $("dashPill").textContent = "Error";
+            $("statusPill").textContent = "Error";
+            return;
+          }
+          const rows = res.rows || [];
+          $("dashPill").textContent = `Mes: ${ym} · Moneda: ${moneda} · Registros: ${rows.length}`;
+          renderCharts(rows, moneda);
+          $("statusPill").textContent = "Listo";
+        })
+        .withFailureHandler(err => {
+          $("dashPill").textContent = "Error";
+          $("statusPill").textContent = "Error";
+          setMsg("Error dashboard: " + err, "err");
+        })
+        .api_getMovimientosByMonth(year, month);
+    }
+
+    // INIT
+    window.addEventListener("load", () => {
+      $("today").textContent = todayYMD();
+      $("fecha").value = todayYMD();
+      $("sub").textContent = "Cargando catálogos desde tu Google Drive…";
+      $("statusPill").textContent = "Cargando…";
+
+      $("categoria").addEventListener("change", rebuildSubcats);
+      $("mesDash").addEventListener("change", loadDashboardMonth);
+      $("monedaDash").addEventListener("change", loadDashboardMonth);
+
+      google.script.run
+        .withSuccessHandler(res => {
+          if (!res.ok) {
+            $("sub").textContent = "Error inicializando.";
+            $("statusPill").textContent = "Error";
+            setMsg("No se pudo iniciar: " + (res.error || "desconocido"), "err");
+            return;
+          }
+          applyCatalogs(res.catalogs);
+          MOVS = res.latest || [];
+
+          $("moneda").value = "CRC";
+          $("mesDash").value = yyyymmNow();
+
+          $("sub").textContent = "Listo. Guardando en Sheets (Drive).";
+          $("statusPill").textContent = "Listo";
+
+          renderTabla();
+          loadDashboardMonth();
+        })
+        .withFailureHandler(err => {
+          $("sub").textContent = "Error inicializando.";
+          $("statusPill").textContent = "Error";
+          setMsg("Error: " + err, "err");
+        })
+        .api_init();
+    });
+  </script>
+</body>
+
+</html>
